@@ -86,10 +86,11 @@
             color: black;
         }
 
-        #add-box {
+        .car-fill-progress-window {
+            position: absolute;
+            top: 10px;
             z-index: 0;
             display: none;
-            position: absolute;
         }
 
         #config-tool-cog {
@@ -120,6 +121,11 @@
         }
         .radio label:after {
             top: 0px;
+        }
+
+        .remove-route img {
+            width:18px;
+            height: 18px;
         }
 
     </style>
@@ -163,10 +169,8 @@
                     <img src="img/logo-small.png" alt="" class="small-logo hidden-xs hidden-sm hidden" />
                 </a>
             </div>
+        </header>
     </div>
-    </header>
-
-
 
 
     <div class="page-wrapper container nav-small">
@@ -215,6 +219,11 @@
                                 <li>
                                     <a id="download" href="#0">
                                         <i class="fa fa-download"></i>
+                                    </a>
+                                </li>
+                                <li data-toggle="tooltip" data-placement="right" title="Сбросить текущий маршрут">
+                                    <a class="remove-route" id="cancelRoute" href="#0">
+                                        <img src="./img/eraser.svg">
                                     </a>
                                 </li>
                             </ul>
@@ -270,18 +279,17 @@
 <button id="send" type="submit" class="btn btn-success pull-right">Начать поиск...</button>
 </div>
 
-<div id="add-box" style="box-shadow: 3px 3px 3px black(10, 10, 10);" class="main-box infographic-box colored gray-bg">
+<div id="add-box" style="box-shadow: 3px 3px 3px black(10, 10, 10);" class="main-box infographic-box colored gray-bg car-fill-progress-window">
 
 <div class="project-box">
     <div class="project-box-content">
-        <span class="chart" data-percent="86">
-                                    <span class="percent">86</span>%<br>
+        <span class="chart" data-percent="0">
+                                    <span class="percent">0</span>%<br>
         <span class="lbl">completed</span>
         <canvas height="130" width="130"></canvas>
         </span>
     </div>
 </div>
-
 
 <button id="add" type="submit" class="btn btn-success pull-right">Поехали...</button>
 </div>

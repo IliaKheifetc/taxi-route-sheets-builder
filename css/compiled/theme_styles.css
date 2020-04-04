@@ -687,7 +687,7 @@ h3 .small { padding-left: 8px }
 .messages-list { margin-left: -30px }
 .dropdown.language.hidden-xs ul.dropdown-menu {
     min-width: 100px;
-    max-width: 200pz;
+    max-width: 200px;
     margin-left: -20px;
 }
 .messages-list .item.first-item { border-top: 0!important }
@@ -1870,7 +1870,7 @@ input[type="radio"] {
     position: absolute;
     text-align: center;
     top: 2px;
-    transform: scale();
+    //transform: scale();
     width: 16px;
 }
 .radio input[type=radio]:checked+label:before,
@@ -4306,7 +4306,7 @@ input[type="radio"] {
     padding: 0 10px;
 }
 .dropdown-example ul.dropdown-menu { display: block }
-svg { width: 100%!important }
+/*svg { width: 100%!important }*/
 .top-page-ui { margin-top: -10px }
 #content-wrapper.email-inbox-wrapper {
     background-color: #fff;
