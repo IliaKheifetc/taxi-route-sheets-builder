@@ -80,7 +80,8 @@
   }
 
   function onMarkerClicked(event) {
-    const targetCoordinates = event.originalEvent.target.geometry.getCoordinates();
+    const target = event.get("target");
+    const targetCoordinates = target.geometry.getCoordinates();
 
     this.timeSelectorModal.hide();
 
@@ -103,6 +104,7 @@
       });
       myMap.geoObjects.add(currentMultiRoute);
 
+      target.options.set("preset", "islands#darkGreenIcon");
       setProgressWindowState();
       return;
     }
@@ -130,9 +132,11 @@
     if (targetReferencePointIndex === -1) {
       // добавляем точку в маршрут
       routeReferencePoints.push(targetCoordinates);
+      target.options.set("preset", "islands#darkGreenIcon");
     } else {
       // удаляем точку из маршрута
       routeReferencePoints.splice(targetReferencePointIndex, 1);
+      target.options.set("preset", "islands#blueIcon");
     }
 
     multiRouteModel.setReferencePoints(routeReferencePoints);
@@ -317,7 +321,7 @@
           .geocode(address)
           .then(result => {
             const geoObject = result.geoObjects.get(0);
-            //console.log("geoObject", geoObject);
+
             geoObject.options.set("hasBalloon", false);
             geoObject.events.add(["click"], onMarkerClicked);
 
