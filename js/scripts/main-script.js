@@ -99,10 +99,15 @@
         // // Зададим собственное оформление линий мультимаршрута.
         // routeStrokeColor: "000088",
         // routeActiveStrokeColor: "ff0000",
-        // pinIconFillColor: "ff0000",
-        boundsAutoApply: false
+        wayPointIconFillColor: "red",
+        wayPointVisible: false,
+        boundsAutoApply: false,
+        iconContent: "1"
       });
+
       myMap.geoObjects.add(currentMultiRoute);
+
+      console.log("currentMultiRoute", currentMultiRoute);
 
       target.options.set("preset", "islands#darkGreenIcon");
       setProgressWindowState();
@@ -133,6 +138,7 @@
       // добавляем точку в маршрут
       routeReferencePoints.push(targetCoordinates);
       target.options.set("preset", "islands#darkGreenIcon");
+      // target.options.set("iconContent", routeReferencePoints.length);
     } else {
       // удаляем точку из маршрута
       routeReferencePoints.splice(targetReferencePointIndex, 1);
@@ -148,9 +154,8 @@
     this.progressWindow.css({
       display: routeReferencePoints.length > 1 ? "block" : "none"
     });
-    this.chart
-      .data("easyPieChart")
-      .update((routeReferencePoints.length - 1) * 25);
+    const percentageValue = (routeReferencePoints.length - 1) * 25;
+    this.chart.data("easyPieChart").update(percentageValue);
   }
 
   function initTooltips() {
@@ -399,6 +404,9 @@
     removeCurrentRouteBtn.bind("click", function() {
       multiRouteModel.setReferencePoints([BEELINE_OFFICE_ADDRESS]);
       setProgressWindowState();
+      myMap.geoObjects.each(function(geoObject) {
+        geoObject.options.set("preset", "islands#blueIcon");
+      });
     });
 
     // создание нумерации
