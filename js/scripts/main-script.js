@@ -54,8 +54,11 @@
   function getAddressAndPhone(addressAndPhoneText) {
     const phoneStartIndex = addressAndPhoneText.indexOf("+7");
 
+    let address = addressAndPhoneText.slice(0, phoneStartIndex);
+    address = address.slice(0, address.lastIndexOf(","));
+
     return {
-      address: addressAndPhoneText.slice(0, phoneStartIndex),
+      address,
       phone: addressAndPhoneText.slice(phoneStartIndex)
     };
   }
@@ -328,6 +331,9 @@
             const geoObject = result.geoObjects.get(0);
 
             geoObject.options.set("hasBalloon", false);
+            geoObject.options.set("hasHint", true);
+            geoObject.properties.set("hintContent", address);
+
             geoObject.events.add(["click"], onMarkerClicked);
 
             myMap.geoObjects.add(geoObject);
