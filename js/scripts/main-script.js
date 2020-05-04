@@ -101,8 +101,8 @@
         // routeActiveStrokeColor: "ff0000",
         wayPointIconFillColor: "red",
         wayPointVisible: false,
-        boundsAutoApply: false,
-        iconContent: "1"
+        boundsAutoApply: false
+        //iconContent: "1"
       });
 
       myMap.geoObjects.add(currentMultiRoute);
@@ -110,6 +110,9 @@
       console.log("currentMultiRoute", currentMultiRoute);
 
       target.options.set("preset", "islands#darkGreenIcon");
+
+      //target.properties.set("iconContent", routeReferencePoints.length - 1);
+
       setProgressWindowState();
       return;
     }
@@ -138,11 +141,14 @@
       // добавляем точку в маршрут
       routeReferencePoints.push(targetCoordinates);
       target.options.set("preset", "islands#darkGreenIcon");
-      // target.options.set("iconContent", routeReferencePoints.length);
+
+      //target.properties.set("iconContent", routeReferencePoints.length - 1);
     } else {
       // удаляем точку из маршрута
       routeReferencePoints.splice(targetReferencePointIndex, 1);
       target.options.set("preset", "islands#blueIcon");
+
+      //target.properties.set("iconContent", undefined);
     }
 
     multiRouteModel.setReferencePoints(routeReferencePoints);
