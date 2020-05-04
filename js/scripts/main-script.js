@@ -346,7 +346,8 @@
         .map(createEmployeeObject);
 
       const addresses = employees.map(
-        employee => `г. ${CITY_NAME}, ${employee.address}`
+        employee =>
+          `г. ${CITY_NAME}, ${employee.district},  ${employee.address}`
       );
 
       addresses.forEach((address, index) => {
@@ -366,6 +367,11 @@
             );
 
             myMap.geoObjects.add(geoObject);
+
+            // geoObject.options.set("iconColor", "black");
+            // geoObject.options.set("iconOffset", [100, 100]);
+            // myMap.geoObjects.add(geoObject);
+            // console.log("myMap.geoObjects", myMap.geoObjects);
           })
           .catch(e => console.error(e));
       });
