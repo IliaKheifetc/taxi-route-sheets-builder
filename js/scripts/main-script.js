@@ -12,7 +12,14 @@
   const DISTRICTS_REQUIRED_FOR_GEOCODING = [
     "Куровской",
     "Льва Толстого",
-    "Мстихино"
+    "Мстихино",
+    "с. Муратовского щебзавода",
+    "Калуга-2",
+    "Воротынск",
+    "с. Воскресенское",
+    "Анненки",
+    "Резвань",
+    "пос. Юбилейный"
   ];
 
   let myMap;
@@ -157,7 +164,8 @@
 
   function getAddressForGeocoding(employee) {
     const shouldSpecifyDistrict = DISTRICTS_REQUIRED_FOR_GEOCODING.some(
-      district => employee.district.includes(district)
+      district =>
+        employee.district.toLowerCase().includes(district.toLowerCase())
     );
     if (shouldSpecifyDistrict) {
       return `г. ${CITY_NAME}, ${employee.district},  ${employee.address}`;
