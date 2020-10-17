@@ -4,43 +4,56 @@
     onDocumentReady();
   });
 
-  const KALUGA_COORDINATES = [54.514533, 36.280053];
-  const BEELINE_OFFICE_ADDRESS = "Московская ул., 289, Калуга";
-  const BEELINE_OFFICE_COORDINATES = [54.5635089, 36.2609796];
-  const CITY_NAME = "Калуга";
-  const MAX_CAR_CAPACITY = 4;
-  const DISTRICTS_REQUIRED_FOR_GEOCODING = [
-    "Куровской",
-    "Льва Толстого",
-    "Мстихино",
-    "с. Муратовского щебзавода",
-    "Калуга-2",
-    "Воротынск",
-    "с. Воскресенское",
-    "Анненки",
-    "Резвань",
-    "пос. Юбилейный",
+  const {
+    BEELINE_OFFICE_ADDRESS,
+    BEELINE_OFFICE_COORDINATES,
+    CITY_NAME,
+    CLUSTERER_INDEX,
+    DISTRICTS_REQUIRED_FOR_GEOCODING,
+    KALUGA_COORDINATES,
+    MAX_CAR_CAPACITY
+  } = window._taxi_constants;
 
-    "д. Бабенки",
-    "д. Городня",
-    "д. Канищево",
-    "д. Лихун",
-    "Колюпаново",
-    "пос. Ильинка",
-    "Пучково",
-    "Ромодановские дворики",
-    "с. Андреевское",
-    "с. Дворцы",
-    "с. Плетеневка",
-    "с. Росва",
-    "Тихонова Пустынь"
-  ];
+  const {
+    addGeoObjectField,
+    createEmployeeObject,
+    getAddressAndPhone,
+    getAddressForGeocoding,
+    getFormattedFullName,
+    getSelectedTime,
+    getStringWithoutLetters,
+    isSameEmployee,
+    setItemAsActive
+  } = window._taxi_utils;
 
   let myMap;
   let clusterer;
   let center;
   let currentMultiRoute = null;
   let multiRouteModel = null;
+  let routeCarPassengers = [];
+
+  const getBalloonContentHeader = (index, name, checked = false) => {
+    const checkboxId = `checkbox-add-to-route-sheet-${index}`;
+    return `<div class='cluster-item-add-to-route-sheet'><input id=${checkboxId} type='checkbox' ${
+      checked ? "checked" : ""
+    }/><label for=${checkboxId}>${name}</label></div>`;
+  };
+
+  const addKalugaOfficeMarker = map => {
+    map.geoObjects.add(
+      new ymaps.Placemark(
+        BEELINE_OFFICE_COORDINATES,
+        {
+          balloonContent: "<strong>ЦПК Калуга</strong>",
+          hintContent: "ЦПК Калуга"
+        },
+        {
+          iconColor: "#ff0000"
+        }
+      )
+    );
+  };
 
   function init() {
     myMap = new ymaps.Map("map", {
@@ -48,22 +61,60 @@
       zoom: 12
     });
 
+    // Создаем собственный макет с информацией о выбранном геообъекте.
+    const customItemContentLayout = ymaps.templateLayoutFactory.createClass(
+      // Флаг "raw" означает, что данные вставляют "как есть" без экранирования html.
+      "<h2 class=ballon_header>{{ properties.balloonContentHeader|raw }}</h2>" +
+        "<div class=ballon_body>{{ properties.balloonContentBody|raw }}</div>"
+    );
+
+    const customBalloonContentLayout = ymaps.templateLayoutFactory.createClass(
+      [
+        "<ul class=list>",
+        // Выводим в цикле список всех геообъектов.
+        "{% for geoObject in properties.geoObjects %}",
+        '<li><a href=# data-placemarkid="{{ geoObject.properties.placemarkId }}" class="list_item">{{ geoObject.properties.balloonContentHeader|raw }}</a></li>',
+        "{% endfor %}",
+        "</ul>"
+      ].join("")
+    );
+
+    $(document).on("click", ".cluster-item-add-to-route-sheet input", event => {
+      const index = +getStringWithoutLetters(event.target.id);
+      const geoObject = myMap.geoObjects.get(index);
+
+      const clustererGeoObjects = myMap.geoObjects
+        .get(CLUSTERER_INDEX)
+        .getGeoObjects();
+
+      const passengerGeoObject = clustererGeoObjects.find(
+        clustererGeoObject => {
+          const currentGeoObjectIndex = +getStringWithoutLetters(
+            clustererGeoObject.properties.get("id")
+          );
+          return currentGeoObjectIndex === index;
+        }
+      );
+
+      passengerGeoObject.events.fire("click");
+    });
+
     clusterer = new ymaps.Clusterer(
       {
         /**
-             * Через кластеризатор можно указать только стили кластеров,
-             * стили для меток нужно назначать каждой метке отдельно.
-             * @see https://api.yandex.ru/maps/doc/jsapi/2.1/ref/reference/option.presetStorage.xml
-             */
+         * Через кластеризатор можно указать только стили кластеров,
+         * стили для меток нужно назначать каждой метке отдельно.
+         * @see https://api.yandex.ru/maps/doc/jsapi/2.1/ref/reference/option.presetStorage.xml
+         */
         preset: "islands#invertedVioletClusterIcons",
         /**
-             * Ставим true, если хотим кластеризовать только точки с одинаковыми координатами.
-             */
+         * Ставим true, если хотим кластеризовать только точки с одинаковыми координатами.
+         */
         groupByCoordinates: true,
         /**
-             * Опции кластеров указываем в кластеризаторе с префиксом "cluster".
-             * @see https://api.yandex.ru/maps/doc/jsapi/2.1/ref/reference/ClusterPlacemark.xml
-             */
+         * Опции кластеров указываем в кластеризаторе с префиксом "cluster".
+         * @see https://api.yandex.ru/maps/doc/jsapi/2.1/ref/reference/ClusterPlacemark.xml
+         */
         clusterDisableClickZoom: true,
         clusterOpenBalloonOnClick: true,
         clusterHideIconOnBalloonOpen: false,
@@ -71,7 +122,9 @@
         clusterHasHint: true,
         clusterOpenHintOnHover: true,
         clusterOpenEmptyHint: true,
-        clusterHintContent: "123"
+        clusterHintContent: "123",
+        // Устанавливаем собственный макет.
+        clusterBalloonContentLayout: customBalloonContentLayout
       },
       { clusterHintContent: "123" }
     );
@@ -91,31 +144,44 @@
       address = address.join(",");
 
       clusterPlacemark.properties.set("hintContent", address);
+      clusterPlacemark.events.add(["click"], cluster => {
+        console.log(
+          "cluster.originalEvent.target.getGeoObjects()",
+          cluster.originalEvent.target.getGeoObjects()
+        );
+
+        console.log("routeCarPassengers", routeCarPassengers);
+        const clusterGeoObjects = cluster.originalEvent.target.getGeoObjects();
+
+        clusterGeoObjects.forEach(clusterGeoObject => {
+          const employee = clusterGeoObject.properties.get("employee");
+          const geoObjectIndex = +getStringWithoutLetters(
+            clusterGeoObject.properties.get("id")
+          );
+
+          const isEmployeeSelected = routeCarPassengers.some(
+            routeCarPassenger =>
+              clusterGeoObject === routeCarPassenger.geoObject
+          );
+
+          clusterGeoObject.properties.set(
+            "balloonContentHeader",
+            getBalloonContentHeader(
+              geoObjectIndex,
+              getFormattedFullName(employee.fullName),
+              isEmployeeSelected
+            )
+          );
+        });
+      });
       return clusterPlacemark;
     };
 
-    center = myMap.geoObjects.add(
-      new ymaps.Placemark(
-        BEELINE_OFFICE_COORDINATES,
-        {
-          balloonContent: "<strong>ЦПК Калуга</strong>",
-          hintContent: "ЦПК Калуга"
-        },
-        {
-          iconColor: "#ff0000"
-        }
-      )
-    );
+    addKalugaOfficeMarker(myMap);
   }
 
   function removeActiveClassFromMenuItems() {
     $(".nav-stacked li").removeClass("active");
-  }
-
-  function setItemAsActive(item) {
-    $(item)
-      .parent("li")
-      .addClass("active");
   }
 
   function setEditorWindowHeight(editorWindow) {
@@ -125,67 +191,6 @@
         $("#footer-bar").height() -
         200
     );
-  }
-
-  function getAddressAndPhone(addressAndPhoneText) {
-    const phoneStartIndex = addressAndPhoneText.indexOf("+7");
-
-    let address =
-      phoneStartIndex !== -1
-        ? addressAndPhoneText.slice(0, phoneStartIndex)
-        : addressAndPhoneText;
-    const lastCommaIndex = address.lastIndexOf(",");
-    address =
-      lastCommaIndex !== -1 ? address.slice(0, lastCommaIndex) : address;
-
-    const phone =
-      phoneStartIndex !== -1 ? addressAndPhoneText.slice(phoneStartIndex) : "";
-
-    return {
-      address,
-      phone
-    };
-  }
-
-  function createEmployeeObject(employeeDataArray) {
-    const { address, phone } = getAddressAndPhone(employeeDataArray[3]);
-
-    return {
-      rideTime: employeeDataArray[0],
-      district: employeeDataArray[1],
-      fullName: employeeDataArray[2],
-      address,
-      phone
-    };
-  }
-
-  function isSameEmployee(employee1, employee2) {
-    return ["rideTime", "district", "fullName", "address", "phone"].every(
-      key => employee1[key] === employee2[key]
-    );
-  }
-
-  function addGeoObjectField(employee, geoObject) {
-    return { ...employee, geoObject };
-  }
-
-  function getSelectedTime(jqRadioButtons) {
-    const radionButtons = Array.from(jqRadioButtons);
-    const selectedRadionButton = radionButtons.find(button => button.checked);
-
-    return selectedRadionButton ? selectedRadionButton.value : null;
-  }
-
-  function getAddressForGeocoding(employee) {
-    const shouldSpecifyDistrict = DISTRICTS_REQUIRED_FOR_GEOCODING.some(
-      district =>
-        employee.district.toLowerCase().includes(district.toLowerCase())
-    );
-    if (shouldSpecifyDistrict) {
-      return `г. ${CITY_NAME}, ${employee.district},  ${employee.address}`;
-    }
-
-    return `г. ${CITY_NAME},  ${employee.address}`;
   }
 
   function onMarkerClicked(employeeData, carPassengers) {
@@ -251,6 +256,7 @@
         // добавляем точку в маршрут
         routeReferencePoints.push(targetCoordinates);
         target.options.set("preset", "islands#darkGreenIcon");
+
         const employee = addGeoObjectField(employeeData, target);
         carPassengers.push(employee);
         //target.properties.set("iconContent", routeReferencePoints.length - 1);
@@ -325,7 +331,6 @@
   }
 
   function onDocumentReady() {
-    let routeCarPassengers = [];
     let routeSheetsData = [];
     const viewEditorBtn = $("#viewEditorBtn");
     let timeTableEditor = $("#cke_pasteTimeTableEditor");
@@ -340,6 +345,12 @@
     const addToRouteSheetBtn = $("#add");
     const downloadExcelFileBtn = $("#download");
     const messageModal = $("#modal-message");
+
+    const getKalugaAddressForGeocoding = getAddressForGeocoding.bind(
+      null,
+      DISTRICTS_REQUIRED_FOR_GEOCODING,
+      CITY_NAME
+    );
 
     setProgressWindowState = setProgressWindowState.bind({
       chart,
@@ -444,6 +455,13 @@
     // });
 
     showAddressesOnMapBtn.bind("click", function() {
+      // удаление всех маркеров с карты, чтобы не происходило наложения
+      if (myMap.geoObjects.getLength() !== 0) {
+        myMap.geoObjects.removeAll();
+        clusterer.removeAll();
+        addKalugaOfficeMarker(myMap);
+      }
+
       // TODO: разобраться с добавлением города или района в начало строки
       const radioButtons = $("#timeSelectorModal input[type='radio']");
       const selectedTime = getSelectedTime(radioButtons);
@@ -470,14 +488,14 @@
         )
         .map(createEmployeeObject);
 
-      const addresses = employees.map(getAddressForGeocoding);
+      const addresses = employees.map(getKalugaAddressForGeocoding);
       // const addressesWithoutDistrict = employees.map(
       //   employee => `г. ${CITY_NAME},  ${employee.address}`
       // );
 
-      addresses.forEach((address, index) => {
+      employees.forEach((employee, index) => {
         ymaps
-          .geocode(address)
+          .geocode(addresses[index])
           .then(result => {
             const geoObject = result.geoObjects.get(0);
             // console.log("result.geoObjects", result.geoObjects.toArray());
@@ -494,9 +512,22 @@
 
             geoObject.options.set("hasBalloon", false);
             geoObject.options.set("hasHint", true);
-            geoObject.properties.set("balloonContentHeader", "header123");
-            geoObject.properties.set("hintContent", address);
+            // geoObject.properties.set(
+            //   "balloonContentHeader",
+            //   getFormattedFullName(employee.fullName)
+            // );
+
+            geoObject.properties.set(
+              "balloonContentHeader",
+              getBalloonContentHeader(
+                index,
+                getFormattedFullName(employee.fullName)
+              )
+            );
+
+            geoObject.properties.set("hintContent", addresses[index]);
             geoObject.properties.set("id", `addressMark_${index}`);
+            geoObject.properties.set("employee", employees[index]);
 
             geoObject.events.add(
               ["click"],
@@ -585,7 +616,11 @@
     removeCurrentRouteBtn.bind("click", function() {
       multiRouteModel.setReferencePoints([BEELINE_OFFICE_ADDRESS]);
       setProgressWindowState();
-      myMap.geoObjects.each(function(geoObject) {
+      const clustererGeoObjects = myMap.geoObjects
+        .get(CLUSTERER_INDEX)
+        .getGeoObjects();
+
+      clustererGeoObjects.forEach(geoObject => {
         geoObject.options.set("preset", "islands#blueIcon");
       });
     });

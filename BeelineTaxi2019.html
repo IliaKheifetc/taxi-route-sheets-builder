@@ -130,18 +130,40 @@
             height: 18px;
         }
 
+        .cluster-item-add-to-route-sheet {
+            display: flex;
+            align-items: center;
+        }
+
+        .cluster-item-add-to-route-sheet input,
+        .cluster-item-add-to-route-sheet label {
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+
+        .cluster-item-add-to-route-sheet label {
+            margin-left: 10px;
+            font-size: 14px;
+        }
+
+        .cluster-item-add-to-route-sheet input:hover,
+        .cluster-item-add-to-route-sheet label:hover {
+            cursor: pointer;
+        }
     </style>
-<script>
-    $(document).ready(function () {
-        const mapElement = $("#map");
-        // 50px - height of header
-        // 37px - height of footer
-        // 15px top padding of content wrapper
-        mapElement.css("height", window.innerHeight - 50 - 37 - 15)
-    })
-</script>
-<script src="https://api-maps.yandex.ru/2.1/?apikey=30cb04af-aa04-428b-9d17-d9dc8fce1686&lang=ru-Ru" type="text/javascript"></script>
-<script src="js/scripts/main-script.js"></script>
+    <script>
+        $(document).ready(function () {
+            const mapElement = $("#map");
+            // 50px - height of header
+            // 37px - height of footer
+            // 15px top padding of content wrapper
+            mapElement.css("height", window.innerHeight - 50 - 37 - 15)
+        })
+    </script>
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=30cb04af-aa04-428b-9d17-d9dc8fce1686&lang=ru-Ru" type="text/javascript"></script>
+    <script src="js/scripts/constants.js"></script>
+    <script src="js/scripts/utils.js"></script>
+    <script src="js/scripts/main-script.js"></script>
 </head>
 
 <body>
