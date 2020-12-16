@@ -282,7 +282,6 @@
           isSameEmployee(employee, employeeData)
         );
         carPassengers.splice(passengerIndex, 1);
-
         //target.properties.set("iconContent", undefined);
       } else {
         // добавляем точку в маршрут
