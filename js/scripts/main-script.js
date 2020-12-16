@@ -4,6 +4,8 @@
     onDocumentReady();
   });
 
+  const { debounce } = _;
+
   const {
     BEELINE_OFFICE_ADDRESS,
     BEELINE_OFFICE_COORDINATES,
@@ -11,7 +13,8 @@
     CLUSTERER_INDEX,
     DISTRICTS_REQUIRED_FOR_GEOCODING,
     KALUGA_COORDINATES,
-    MAX_CAR_CAPACITY
+    MAX_CAR_CAPACITY,
+    DEBOUNCE_DELAY
   } = window._taxi_constants;
 
   const {
@@ -32,6 +35,9 @@
   let currentMultiRoute = null;
   let multiRouteModel = null;
   let routeCarPassengers = [];
+
+  const isPassengerOnCurrentList = target =>
+    routeCarPassengers.some(passenger => passenger.geoObject === target);
 
   const getBalloonContentHeader = (index, name, checked = false) => {
     const checkboxId = `checkbox-add-to-route-sheet-${index}`;
@@ -70,7 +76,7 @@
 
     const customBalloonContentLayout = ymaps.templateLayoutFactory.createClass(
       [
-        "<ul class=list>",
+        "<ul class='cluster-list'>",
         // Выводим в цикле список всех геообъектов.
         "{% for geoObject in properties.geoObjects %}",
         '<li><a href=# data-placemarkid="{{ geoObject.properties.placemarkId }}" class="list_item">{{ geoObject.properties.balloonContentHeader|raw }}</a></li>',
@@ -95,6 +101,17 @@
           return currentGeoObjectIndex === index;
         }
       );
+
+      const isPassengerAlreadyAdded = isPassengerOnCurrentList(
+        passengerGeoObject
+      );
+
+      if (
+        !isPassengerAlreadyAdded &&
+        routeCarPassengers.length === MAX_CAR_CAPACITY
+      ) {
+        event.preventDefault();
+      }
 
       passengerGeoObject.events.fire("click");
     });
@@ -145,12 +162,6 @@
 
       clusterPlacemark.properties.set("hintContent", address);
       clusterPlacemark.events.add(["click"], cluster => {
-        console.log(
-          "cluster.originalEvent.target.getGeoObjects()",
-          cluster.originalEvent.target.getGeoObjects()
-        );
-
-        console.log("routeCarPassengers", routeCarPassengers);
         const clusterGeoObjects = cluster.originalEvent.target.getGeoObjects();
 
         clusterGeoObjects.forEach(clusterGeoObject => {
@@ -195,6 +206,8 @@
 
   function onMarkerClicked(employeeData, carPassengers) {
     return function(event) {
+      console.log("onMarkerClicked");
+
       const target = event.get("target");
       const targetCoordinates = target.geometry.getCoordinates();
       this.timeSelectorModal.hide();
@@ -234,35 +247,34 @@
 
       let routeReferencePoints = multiRouteModel.getReferencePoints();
 
-      // Ищем в массиве точек индекс той точки, на которую сейчас кликнули
-      const targetReferencePointIndex = routeReferencePoints.findIndex(
-        referencePoint => {
-          return (
-            Array.isArray(referencePoint) &&
-            targetCoordinates[0] === referencePoint[0] &&
-            targetCoordinates[1] === referencePoint[1]
-          );
-        }
-      );
+      const isPassengerAdded = isPassengerOnCurrentList(target);
+
       if (
-        targetReferencePointIndex === -1 &&
+        !isPassengerAdded &&
         routeReferencePoints.length === MAX_CAR_CAPACITY + 1
       ) {
         alert("нельзя добавить в одну машину больше 4 пассажиров!");
         return;
       }
 
-      if (targetReferencePointIndex === -1) {
-        // добавляем точку в маршрут
-        routeReferencePoints.push(targetCoordinates);
-        target.options.set("preset", "islands#darkGreenIcon");
+      if (isPassengerAdded) {
+        // // удаляем точку из маршрута
+        // Ищем в массиве точек индекс той точки, на которую сейчас кликнули
+        const routeReferencePointIndex = routeReferencePoints.findIndex(
+          referencePoint => {
+            if (!Array.isArray(referencePoint)) {
+              return false;
+            }
 
-        const employee = addGeoObjectField(employeeData, target);
-        carPassengers.push(employee);
-        //target.properties.set("iconContent", routeReferencePoints.length - 1);
-      } else {
-        // удаляем точку из маршрута
-        routeReferencePoints.splice(targetReferencePointIndex, 1);
+            return (
+              targetCoordinates[0] === referencePoint[0] &&
+              targetCoordinates[1] === referencePoint[1]
+            );
+          }
+        );
+
+        routeReferencePoints.splice(routeReferencePointIndex, 1);
+
         target.options.set("preset", "islands#blueIcon");
 
         // удаление из массива пассажиров
@@ -272,9 +284,18 @@
         carPassengers.splice(passengerIndex, 1);
 
         //target.properties.set("iconContent", undefined);
+      } else {
+        // добавляем точку в маршрут
+        routeReferencePoints.push(targetCoordinates);
+        target.options.set("preset", "islands#darkGreenIcon");
+
+        const employee = addGeoObjectField(employeeData, target);
+        carPassengers.push(employee);
+        //target.properties.set("iconContent", routeReferencePoints.length - 1);
       }
 
       multiRouteModel.setReferencePoints(routeReferencePoints);
+
       setProgressWindowState();
     }.bind(this);
   }
@@ -454,164 +475,155 @@
     //   // });
     // });
 
-    showAddressesOnMapBtn.bind("click", function() {
-      // удаление всех маркеров с карты, чтобы не происходило наложения
-      if (myMap.geoObjects.getLength() !== 0) {
-        myMap.geoObjects.removeAll();
-        clusterer.removeAll();
-        addKalugaOfficeMarker(myMap);
-      }
+    showAddressesOnMapBtn.bind(
+      "click",
+      debounce(function() {
+        // удаление всех маркеров с карты, чтобы не происходило наложения
+        if (myMap.geoObjects.getLength() !== 0) {
+          myMap.geoObjects.removeAll();
+          clusterer.removeAll();
+          addKalugaOfficeMarker(myMap);
+        }
 
-      // TODO: разобраться с добавлением города или района в начало строки
-      const radioButtons = $("#timeSelectorModal input[type='radio']");
-      const selectedTime = getSelectedTime(radioButtons);
+        // TODO: разобраться с добавлением города или района в начало строки
+        const radioButtons = $("#timeSelectorModal input[type='radio']");
+        const selectedTime = getSelectedTime(radioButtons);
 
-      // получаем все строки
-      const jqRows = $("#cke_pasteTimeTableEditor iframe")
-        .contents()
-        .find("table > tbody > tr");
+        // получаем все строки
+        const jqRows = $("#cke_pasteTimeTableEditor iframe")
+          .contents()
+          .find("table > tbody > tr");
 
-      // фильтруем строки по времени
-      const rowsByTime = Array.from(jqRows).filter(row => {
-        return row.innerText && row.innerText.includes(selectedTime);
-      });
-
-      if (!rowsByTime.length) {
-        return;
-      }
-
-      const employees = rowsByTime
-        .map(row =>
-          Array.from(row.querySelectorAll("td")).map(
-            element => element.innerText
-          )
-        )
-        .map(createEmployeeObject);
-
-      const addresses = employees.map(getKalugaAddressForGeocoding);
-      // const addressesWithoutDistrict = employees.map(
-      //   employee => `г. ${CITY_NAME},  ${employee.address}`
-      // );
-
-      employees.forEach((employee, index) => {
-        ymaps
-          .geocode(addresses[index])
-          .then(result => {
-            const geoObject = result.geoObjects.get(0);
-            // console.log("result.geoObjects", result.geoObjects.toArray());
-            // console.log("geoObject", geoObject);
-            // console.log(
-            //   "geoObject.getAddressLine()",
-            //   geoObject.getAddressLine()
-            // );
-            // console.log(
-            //   "geoObject.getAdministrativeAreas()",
-            //   geoObject.getAdministrativeAreas()
-            // );
-            // console.log("geoObject.getLocalities()", geoObject.getLocalities());
-
-            geoObject.options.set("hasBalloon", false);
-            geoObject.options.set("hasHint", true);
-            // geoObject.properties.set(
-            //   "balloonContentHeader",
-            //   getFormattedFullName(employee.fullName)
-            // );
-
-            geoObject.properties.set(
-              "balloonContentHeader",
-              getBalloonContentHeader(
-                index,
-                getFormattedFullName(employee.fullName)
-              )
-            );
-
-            geoObject.properties.set("hintContent", addresses[index]);
-            geoObject.properties.set("id", `addressMark_${index}`);
-            geoObject.properties.set("employee", employees[index]);
-
-            geoObject.events.add(
-              ["click"],
-              onMarkerClicked(employees[index], routeCarPassengers)
-            );
-
-            clusterer.add(geoObject);
-
-            myMap.geoObjects.add(clusterer);
-            // clusterer.hint.open(geoObject.geometry.getCoordinates(), "sdfds");
-
-            // geoObject.options.set("iconColor", "black");
-            // geoObject.options.set("iconOffset", [100, 100]);
-          })
-          .catch(e => console.error(e));
-      });
-
-      return;
-
-      $("#cke_2_contents iframe")
-        .contents()
-        .find("body")
-        .html("");
-      var ddd = new Date().getUTCMonth();
-      ddd++;
-      time = $("input[name=time]:checked").val();
-      if ($("input[name=time]:checked").val() != "22:00") {
-        ddate =
-          new Date().getUTCDate() +
-          1 +
-          "." +
-          ddd +
-          "." +
-          new Date().getUTCFullYear();
-      } else {
-        ddate =
-          new Date().getUTCDate() +
-          "." +
-          ddd +
-          "." +
-          new Date().getUTCFullYear();
-      }
-
-      $("#cke_1_contents iframe")
-        .contents()
-        .find("body table tr")
-        .css({
-          "background-color": "white"
+        // фильтруем строки по времени
+        const rowsByTime = Array.from(jqRows).filter(row => {
+          return row.innerText && row.innerText.includes(selectedTime);
         });
-      waypts_length = [];
-      waypts = [];
-      calculateAndDisplayRoute(directionsService, directionsDisplay);
-      if (
-        $("#cke_1_contents iframe")
-          .contents()
-          .find("body table tr:eq(2)")
-          .html() == undefined
-      ) {
-        $(".modal-body").html("Вы не загрузили таблицу с адресами!");
-        $(".modal").modal();
-        return false;
-      }
-      setMapOnAll(null);
-      markers.splice(1, markers.length - 1);
 
-      setMapOnAll(map);
-      index =
-        $("#cke_1_contents iframe")
-          .contents()
-          .find("body table tr:last")
-          .index() + 1;
-      //console.error(index);
-      nach = 0;
+        if (!rowsByTime.length) {
+          return;
+        }
 
-      geocodeAddress(
-        geocoder,
-        map,
-        $("#cke_1_contents iframe")
-          .contents()
-          .find("body table tr:eq(" + nach + ") td:eq(3)")
-          .text()
-      );
-      //setTimeout('geocodeAddress(geocoder, map,$("#cke_1_contents iframe").contents().find('body table tr:eq('+nach+') td:eq(0)').text())',5000);
-    });
+        const employees = rowsByTime
+          .map(row =>
+            Array.from(row.querySelectorAll("td")).map(
+              element => element.innerText
+            )
+          )
+          .map(createEmployeeObject);
+
+        const addresses = employees.map(getKalugaAddressForGeocoding);
+        // const addressesWithoutDistrict = employees.map(
+        //   employee => `г. ${CITY_NAME},  ${employee.address}`
+        // );
+
+        employees.forEach((employee, index) => {
+          ymaps
+            .geocode(addresses[index])
+            .then(result => {
+              const geoObject = result.geoObjects.get(0);
+              geoObject.options.set("hasBalloon", false);
+              geoObject.options.set("hasHint", true);
+              // geoObject.properties.set(
+              //   "balloonContentHeader",
+              //   getFormattedFullName(employee.fullName)
+              // );
+
+              geoObject.properties.set(
+                "balloonContentHeader",
+                getBalloonContentHeader(
+                  index,
+                  getFormattedFullName(employee.fullName)
+                )
+              );
+
+              geoObject.properties.set("hintContent", addresses[index]);
+              geoObject.properties.set("id", `addressMark_${index}`);
+              geoObject.properties.set("employee", employees[index]);
+
+              geoObject.events.add(
+                ["click"],
+                onMarkerClicked(employees[index], routeCarPassengers)
+              );
+
+              clusterer.add(geoObject);
+
+              myMap.geoObjects.add(clusterer);
+              // clusterer.hint.open(geoObject.geometry.getCoordinates(), "sdfds");
+
+              // geoObject.options.set("iconColor", "black");
+              // geoObject.options.set("iconOffset", [100, 100]);
+            })
+            .catch(e => console.error(e));
+        });
+
+        return;
+
+        // $("#cke_2_contents iframe")
+        //   .contents()
+        //   .find("body")
+        //   .html("");
+        // var ddd = new Date().getUTCMonth();
+        // ddd++;
+        // time = $("input[name=time]:checked").val();
+        // if ($("input[name=time]:checked").val() != "22:00") {
+        //   ddate =
+        //     new Date().getUTCDate() +
+        //     1 +
+        //     "." +
+        //     ddd +
+        //     "." +
+        //     new Date().getUTCFullYear();
+        // } else {
+        //   ddate =
+        //     new Date().getUTCDate() +
+        //     "." +
+        //     ddd +
+        //     "." +
+        //     new Date().getUTCFullYear();
+        // }
+        //
+        // $("#cke_1_contents iframe")
+        //   .contents()
+        //   .find("body table tr")
+        //   .css({
+        //     "background-color": "white"
+        //   });
+        // waypts_length = [];
+        // waypts = [];
+        // calculateAndDisplayRoute(directionsService, directionsDisplay);
+        // if (
+        //   $("#cke_1_contents iframe")
+        //     .contents()
+        //     .find("body table tr:eq(2)")
+        //     .html() == undefined
+        // ) {
+        //   $(".modal-body").html("Вы не загрузили таблицу с адресами!");
+        //   $(".modal").modal();
+        //   return false;
+        // }
+        // setMapOnAll(null);
+        // markers.splice(1, markers.length - 1);
+        //
+        // setMapOnAll(map);
+        // index =
+        //   $("#cke_1_contents iframe")
+        //     .contents()
+        //     .find("body table tr:last")
+        //     .index() + 1;
+        // //console.error(index);
+        // nach = 0;
+        //
+        // geocodeAddress(
+        //   geocoder,
+        //   map,
+        //   $("#cke_1_contents iframe")
+        //     .contents()
+        //     .find("body table tr:eq(" + nach + ") td:eq(3)")
+        //     .text()
+        // );
+        //setTimeout('geocodeAddress(geocoder, map,$("#cke_1_contents iframe").contents().find('body table tr:eq('+nach+') td:eq(0)').text())',5000);
+      }, DEBOUNCE_DELAY)
+    );
 
     removeCurrentRouteBtn.bind("click", function() {
       multiRouteModel.setReferencePoints([BEELINE_OFFICE_ADDRESS]);
@@ -623,6 +635,8 @@
       clustererGeoObjects.forEach(geoObject => {
         geoObject.options.set("preset", "islands#blueIcon");
       });
+
+      routeCarPassengers.length = 0;
     });
 
     addToRouteSheetBtn.on("click", () => {
@@ -684,7 +698,7 @@
                 tableBuilder.sheetRowCursor === 1
                   ? 1
                   : tableBuilder.sheetRowCursor + 1,
-              date: moment(new Date()).format("DD.MM.YYYY"),
+              date: new Date().toLocaleDateString(),
               time: routeSheetEmployees[0].rideTime,
               employees: routeSheetEmployees
             });

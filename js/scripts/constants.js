@@ -32,6 +32,7 @@
     "Тихонова Пустынь"
   ];
   const CLUSTERER_INDEX = 1;
+  const DEBOUNCE_DELAY = 500;
 
   window._taxi_constants = {
     BEELINE_OFFICE_ADDRESS,
@@ -40,6 +41,7 @@
     CLUSTERER_INDEX,
     DISTRICTS_REQUIRED_FOR_GEOCODING,
     KALUGA_COORDINATES,
-    MAX_CAR_CAPACITY
+    MAX_CAR_CAPACITY,
+    DEBOUNCE_DELAY
   };
 })(window);
