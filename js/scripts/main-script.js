@@ -333,14 +333,21 @@
     this.css({ display: "none" });
   }
 
-  function showMessageModal({ title = "Сообщение", bodyText, onClose }) {
+  function showMessageModal({ title, bodyText, onClose }) {
     this.removeClass("fade");
     this.css({ display: "block" });
     const messageTitle = this.find(".modal-title");
     const messageBody = this.find(".modal-body");
+    const messageHeader = this.find(".modal-header");
     const messageFooterCloseBtn = this.find(".modal-footer button");
     const messageHeaderCloseBtn = this.find(".modal-header button");
-    messageTitle.text(title);
+
+    title && messageTitle.text(title);
+    messageTitle.css({ display: title ? "block" : "none" });
+    title
+      ? messageHeader.removeClass("no-border-bottom")
+      : messageHeader.addClass("no-border-bottom");
+
     messageBody.text(bodyText);
 
     messageHeaderCloseBtn.on("click", hideMessageModal);
@@ -493,12 +500,23 @@
           .contents()
           .find("table > tbody > tr");
 
+        if (!jqRows.length) {
+          showMessageModal({
+            bodyText:
+              "Таблица с информацией по сотрудниками не скопирована или таблица некорректного формата"
+          });
+          return;
+        }
+
         // фильтруем строки по времени
         const rowsByTime = Array.from(jqRows).filter(row => {
           return row.innerText && row.innerText.includes(selectedTime);
         });
 
         if (!rowsByTime.length) {
+          showMessageModal({
+            bodyText: "Нет сотрудников, записанных на выбранное время"
+          });
           return;
         }
 
