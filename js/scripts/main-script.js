@@ -1,5 +1,5 @@
 (function taxiModule() {
-  ymaps.ready(function() {
+  ymaps.ready(function () {
     init();
     onDocumentReady();
   });
@@ -146,7 +146,7 @@
       { clusterHintContent: "123" }
     );
 
-    clusterer.createCluster = function(center, geoObjects) {
+    clusterer.createCluster = function (center, geoObjects) {
       // Создаем метку-кластер с помощью стандартной реализации метода.
       let clusterPlacemark = ymaps.Clusterer.prototype.createCluster.call(
           this,
@@ -205,7 +205,7 @@
   }
 
   function onMarkerClicked(employeeData, carPassengers) {
-    return function(event) {
+    return function (event) {
       console.log("onMarkerClicked");
 
       const target = event.get("target");
@@ -315,10 +315,8 @@
   function initPieChart(chartNode) {
     chartNode.easyPieChart({
       easing: "easeOutBounce",
-      onStep: function(from, to, percent) {
-        $(this.el)
-          .find(".percent")
-          .text(Math.round(percent));
+      onStep: function (from, to, percent) {
+        $(this.el).find(".percent").text(Math.round(percent));
       },
       barColor: "#68b3a5",
       trackColor: "#f2f2f2",
@@ -392,7 +390,7 @@
     initTooltips();
     initPieChart(chart);
 
-    $("#voronezh").bind("click", function() {
+    $("#voronezh").bind("click", function () {
       haightAshbury = new ymaps.maps.LatLng(51.680647, 39.180847);
       setMapOnAll(null);
       markers.splice(1, markers.length - 1);
@@ -403,7 +401,7 @@
       map.setCenter(markers[0].getPosition());
     });
 
-    $("#nino").bind("click", function() {
+    $("#nino").bind("click", function () {
       haightAshbury = new ymaps.maps.LatLng(56.307438, 43.988931);
       setMapOnAll(null);
       markers.splice(1, markers.length - 1);
@@ -414,7 +412,7 @@
       map.setCenter(markers[0].getPosition());
     });
 
-    $("#perm").bind("click", function() {
+    $("#perm").bind("click", function () {
       haightAshbury = new ymaps.maps.LatLng(58.009557, 56.187656);
       setMapOnAll(null);
       markers.splice(1, markers.length - 1);
@@ -432,7 +430,7 @@
         20
     );
 
-    viewEditorBtn.bind("click", function() {
+    viewEditorBtn.bind("click", function () {
       removeActiveClassFromMenuItems();
       setItemAsActive(this);
       timeSelectorModal.hide();
@@ -454,7 +452,7 @@
       setEditorWindowHeight($("#cke_1_contents"));
     });
 
-    viewTimeSelectorModalBtn.bind("click", function() {
+    viewTimeSelectorModalBtn.bind("click", function () {
       removeActiveClassFromMenuItems();
       setItemAsActive(this);
       timeTableEditor.hide();
@@ -483,13 +481,16 @@
 
     showAddressesOnMapBtn.bind(
       "click",
-      debounce(function() {
+      debounce(function () {
         // удаление всех маркеров с карты, чтобы не происходило наложения
         if (myMap.geoObjects.getLength() !== 0) {
           myMap.geoObjects.removeAll();
           clusterer.removeAll();
           addKalugaOfficeMarker(myMap);
         }
+
+        // удаляем/заново инициализируем данные для маршрутного листа
+        routeSheetsData = [];
 
         // TODO: разобраться с добавлением города или района в начало строки
         const radioButtons = $("#timeSelectorModal input[type='radio']");
@@ -642,7 +643,7 @@
       }, DEBOUNCE_DELAY)
     );
 
-    removeCurrentRouteBtn.bind("click", function() {
+    removeCurrentRouteBtn.bind("click", function () {
       multiRouteModel.setReferencePoints([BEELINE_OFFICE_ADDRESS]);
       setProgressWindowState();
       const clustererGeoObjects = myMap.geoObjects
@@ -724,7 +725,7 @@
           // Write to file.
           return workbook.outputAsync();
         })
-        .then(function(blob) {
+        .then(function (blob) {
           // if (window.navigator && window.navigator.msSaveOrOpenBlob) {
           //   window.navigator.msSaveOrOpenBlob(blob, "Маршрутные листы.xlsx");
           // } else {
@@ -738,7 +739,7 @@
           document.body.removeChild(a);
           //}
         })
-        .catch(function(err) {
+        .catch(function (err) {
           alert(err.message || err);
           throw err;
         });

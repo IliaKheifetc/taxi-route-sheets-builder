@@ -1,3 +1,5 @@
+const { getFormattedFullName } = window._taxi_utils;
+
 class TableBuilder {
   constructor(excelSheet) {
     this.sheet = excelSheet;
@@ -52,17 +54,26 @@ class TableBuilder {
     );
     this.createRow(
       ++startRowIndex,
-      [{ value: "Время посадки:", colSpan: 2 }, { value: time, colSpan: 2 }],
+      [
+        { value: "Время посадки:", colSpan: 2 },
+        { value: time, colSpan: 2 }
+      ],
       [{ bold: true }]
     );
     this.createRow(
       ++startRowIndex,
-      [{ value: "Номер машины:", colSpan: 2 }, { value: "", colSpan: 2 }],
+      [
+        { value: "Номер машины:", colSpan: 2 },
+        { value: "", colSpan: 2 }
+      ],
       [{ bold: true }]
     );
     this.createRow(
       ++startRowIndex,
-      [{ value: "Номер заказа:", colSpan: 2 }, { value: "", colSpan: 2 }],
+      [
+        { value: "Номер заказа:", colSpan: 2 },
+        { value: "", colSpan: 2 }
+      ],
       [{ bold: true }]
     );
     this.createRow(
@@ -74,9 +85,10 @@ class TableBuilder {
         { bold: true, fill: "d3d3d3", horizontalAlignment: "center" }
       ]
     );
+
     employees.forEach(employee => {
       const rowNumber = this.createRow(++startRowIndex, [
-        { value: employee.fullName },
+        { value: getFormattedFullName(employee.fullName) },
         { value: `${employee.address}, ${employee.phone}` },
         { value: employee.district, colSpan: 2 }
       ]).rowNumber();
