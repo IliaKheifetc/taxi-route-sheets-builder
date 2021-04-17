@@ -1,4 +1,4 @@
-(function() {
+(function () {
   const KALUGA_COORDINATES = [54.514533, 36.280053];
 
   const BEELINE_OFFICE_ADDRESS = "Московская ул., 289, Калуга";
@@ -33,15 +33,28 @@
   ];
   const CLUSTERER_INDEX = 1;
   const DEBOUNCE_DELAY = 500;
+  const ROWS_PER_PAGE = 50;
+  const HEADER_ROWS_COUNT = 6;
+
+  const EMPLOYEE_FIELDS_NAMES = [
+    "rideTime",
+    "district",
+    "fullName",
+    "address",
+    "phone"
+  ];
 
   window._taxi_constants = {
     BEELINE_OFFICE_ADDRESS,
     BEELINE_OFFICE_COORDINATES,
     CITY_NAME,
     CLUSTERER_INDEX,
+    DEBOUNCE_DELAY,
     DISTRICTS_REQUIRED_FOR_GEOCODING,
+    EMPLOYEE_FIELDS_NAMES,
+    HEADER_ROWS_COUNT,
     KALUGA_COORDINATES,
     MAX_CAR_CAPACITY,
-    DEBOUNCE_DELAY
+    ROWS_PER_PAGE
   };
 })(window);

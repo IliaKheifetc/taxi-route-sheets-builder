@@ -230,11 +230,7 @@
       <header class="navbar" id="header-navbar">
         <div class="container">
           <a href="index.html" id="logo" class="navbar-brand">
-            <img
-              src="img/beelinelogo.png"
-              alt=""
-              class="normal-logo logo-white"
-            />
+            <img src="img/logo.png" alt="" class="normal-logo logo-white" />
             <img
               src="img/logo-black.png"
               alt=""
@@ -294,12 +290,20 @@
                 id="sidebar-nav"
               >
                 <ul class="nav nav-pills nav-stacked">
-                  <li>
+                  <li
+                    data-toggle="tooltip"
+                    data-placement="right"
+                    title="Таблица"
+                  >
                     <a id="viewEditorBtn" href="#0">
                       <i class="fa fa-table"></i>
                     </a>
                   </li>
-                  <li>
+                  <li
+                    data-toggle="tooltip"
+                    data-placement="right"
+                    title="Поиск машины"
+                  >
                     <a id="viewTimeSelectorBtn" href="#0">
                       <i class="fa fa-car"></i>
                     </a>
@@ -309,7 +313,11 @@
                   <!--<i class="fa fa-copy"></i>-->
                   <!--</a>-->
                   <!--</li>-->
-                  <li>
+                  <li
+                    data-toggle="tooltip"
+                    data-placement="right"
+                    title="Выгрузить в Excel"
+                  >
                     <a id="download" href="#0">
                       <i class="fa fa-download"></i>
                     </a>

@@ -38,10 +38,10 @@ class TableBuilder {
     return currentCell;
   }
 
-  createRouteSheetBlock({ startRowIndex, date, time, employees }) {
+  createRouteSheetBlock({ startRowIndex, date, time, employees, index }) {
     this.createRow(
       startRowIndex,
-      [{ value: 'Маршрутный лист "БИЛАЙН"', colSpan: 4 }],
+      [{ value: `Маршрутный лист "БИЛАЙН" №${index}`, colSpan: 4 }],
       [{ bold: true, fill: "d3d3d3", horizontalAlignment: "center" }]
     );
     this.createRow(

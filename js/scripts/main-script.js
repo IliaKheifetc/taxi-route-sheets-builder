@@ -11,10 +11,12 @@
     BEELINE_OFFICE_COORDINATES,
     CITY_NAME,
     CLUSTERER_INDEX,
+    DEBOUNCE_DELAY,
     DISTRICTS_REQUIRED_FOR_GEOCODING,
+    HEADER_ROWS_COUNT,
     KALUGA_COORDINATES,
     MAX_CAR_CAPACITY,
-    DEBOUNCE_DELAY
+    ROWS_PER_PAGE
   } = window._taxi_constants;
 
   const {
@@ -22,6 +24,7 @@
     createEmployeeObject,
     getAddressAndPhone,
     getAddressForGeocoding,
+    getDictionaryKey,
     getFormattedFullName,
     getSelectedTime,
     getStringWithoutLetters,
@@ -35,6 +38,8 @@
   let currentMultiRoute = null;
   let multiRouteModel = null;
   let routeCarPassengers = [];
+  let routeSheetsData = [];
+  let routeSheetsDataSet = new Set();
 
   const isPassengerOnCurrentList = target =>
     routeCarPassengers.some(passenger => passenger.geoObject === target);
@@ -206,8 +211,6 @@
 
   function onMarkerClicked(employeeData, carPassengers) {
     return function (event) {
-      console.log("onMarkerClicked");
-
       const target = event.get("target");
       const targetCoordinates = target.geometry.getCoordinates();
       this.timeSelectorModal.hide();
@@ -356,7 +359,6 @@
   }
 
   function onDocumentReady() {
-    let routeSheetsData = [];
     const viewEditorBtn = $("#viewEditorBtn");
     let timeTableEditor = $("#cke_pasteTimeTableEditor");
     //const viewRouteSheetsBtn = $("#viewRouteSheets");
@@ -441,13 +443,6 @@
           : timeTableEditor;
       timeTableEditor.toggle();
       routeSheets.hide();
-      //console.clear();
-      console.log(
-        $("#cke_1_contents iframe")
-          .contents()
-          .find("body table tr:eq(2)")
-          .html()
-      );
 
       setEditorWindowHeight($("#cke_1_contents"));
     });
@@ -489,9 +484,6 @@
           addKalugaOfficeMarker(myMap);
         }
 
-        // удаляем/заново инициализируем данные для маршрутного листа
-        routeSheetsData = [];
-
         // TODO: разобраться с добавлением города или района в начало строки
         const radioButtons = $("#timeSelectorModal input[type='radio']");
         const selectedTime = getSelectedTime(radioButtons);
@@ -511,7 +503,9 @@
 
         // фильтруем строки по времени
         const rowsByTime = Array.from(jqRows).filter(row => {
-          return row.innerText && row.innerText.includes(selectedTime);
+          const time = row.children[0].innerText.padStart(5, "0");
+
+          return time === selectedTime;
         });
 
         if (!rowsByTime.length) {
@@ -521,6 +515,7 @@
           return;
         }
 
+        // все сотрудники для выбранного времени
         const employees = rowsByTime
           .map(row =>
             Array.from(row.querySelectorAll("td")).map(
@@ -529,12 +524,26 @@
           )
           .map(createEmployeeObject);
 
-        const addresses = employees.map(getKalugaAddressForGeocoding);
+        // сотрудники для выбранного времени, еще не внесенные в маршрутные листы
+        const notAddedEmployees = employees.filter(employee => {
+          const key = getDictionaryKey(employee);
+
+          return !routeSheetsDataSet.has(key);
+        });
+
+        if (!notAddedEmployees.length) {
+          showMessageModal({
+            bodyText: "На выбранное время уже сформированы маршрутные листы"
+          });
+          return;
+        }
+
+        const addresses = notAddedEmployees.map(getKalugaAddressForGeocoding);
         // const addressesWithoutDistrict = employees.map(
         //   employee => `г. ${CITY_NAME},  ${employee.address}`
         // );
 
-        employees.forEach((employee, index) => {
+        notAddedEmployees.forEach((employee, index) => {
           ymaps
             .geocode(addresses[index])
             .then(result => {
@@ -556,11 +565,11 @@
 
               geoObject.properties.set("hintContent", addresses[index]);
               geoObject.properties.set("id", `addressMark_${index}`);
-              geoObject.properties.set("employee", employees[index]);
+              geoObject.properties.set("employee", employee);
 
               geoObject.events.add(
                 ["click"],
-                onMarkerClicked(employees[index], routeCarPassengers)
+                onMarkerClicked(employee, routeCarPassengers)
               );
 
               clusterer.add(geoObject);
@@ -664,6 +673,12 @@
 
       routeSheetsData.push([...routeCarPassengers]);
 
+      routeCarPassengers.forEach(passenger => {
+        const key = getDictionaryKey(passenger);
+
+        routeSheetsDataSet.add(key);
+      });
+
       while (routeCarPassengers.length) {
         const currentMarker = routeCarPassengers[0];
 
@@ -694,32 +709,53 @@
           tableBuilder.setColumns([
             {
               name: "A",
-              width: 50
+              width: 18
             },
             {
               name: "B",
-              width: 50
+              width: 44.14
             },
             {
               name: "C",
-              width: 40
+              width: 15.42
             }
           ]);
+
+          let pageRowsLeft = ROWS_PER_PAGE;
+          let isPageFirstBlock = true;
 
           routeSheetsData.forEach((routeSheetEmployees, i) => {
             if (!routeSheetEmployees.length) {
               return;
             }
 
+            const employeesRowsCount = routeSheetEmployees.length;
+            const newBlockRowsCount =
+              HEADER_ROWS_COUNT +
+              employeesRowsCount +
+              (isPageFirstBlock ? 0 : 1);
+
+            if (newBlockRowsCount > pageRowsLeft) {
+              tableBuilder.sheetRowCursor =
+                Math.round(tableBuilder.sheetRowCursor / ROWS_PER_PAGE) *
+                  ROWS_PER_PAGE +
+                1; //pageRowsLeft;
+              isPageFirstBlock = true;
+              pageRowsLeft = ROWS_PER_PAGE;
+            }
+
+            pageRowsLeft -= newBlockRowsCount;
+
             tableBuilder.createRouteSheetBlock({
               startRowIndex:
-                tableBuilder.sheetRowCursor === 1
-                  ? 1
-                  : tableBuilder.sheetRowCursor + 1,
+                tableBuilder.sheetRowCursor + (isPageFirstBlock ? 0 : 1),
               date: new Date().toLocaleDateString(),
               time: routeSheetEmployees[0].rideTime,
-              employees: routeSheetEmployees
+              employees: routeSheetEmployees,
+              index: i + 1
             });
+
+            isPageFirstBlock = false;
           });
 
           // Write to file.

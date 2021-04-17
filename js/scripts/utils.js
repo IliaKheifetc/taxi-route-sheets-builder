@@ -1,4 +1,6 @@
-(function() {
+(function () {
+  const { EMPLOYEE_FIELDS_NAMES } = window._taxi_constants;
+
   function getAddressAndPhone(addressAndPhoneText) {
     const phoneStartIndex = addressAndPhoneText.indexOf("+7");
 
@@ -32,15 +34,24 @@
   }
 
   function isSameEmployee(employee1, employee2) {
-    return ["rideTime", "district", "fullName", "address", "phone"].every(
+    return EMPLOYEE_FIELDS_NAMES.every(
       key => employee1[key] === employee2[key]
+    );
+  }
+
+  function getDictionaryKey(employee) {
+    return EMPLOYEE_FIELDS_NAMES.reduce(
+      (accumulator, fieldName) => accumulator + employee[fieldName],
+      ""
     );
   }
 
   function getFormattedFullName(fullName) {
     console.log("fullName", fullName);
     const [lastName, firstName, patronymic] = fullName.split(" ");
-    return `${lastName} ${firstName[0]}. ${patronymic[0]}.`;
+    return `${lastName} ${firstName[0]}. ${
+      patronymic ? `${patronymic[0]}.` : ""
+    }`;
   }
 
   function addGeoObjectField(employee, geoObject) {
@@ -51,9 +62,7 @@
   }
 
   function setItemAsActive(item) {
-    $(item)
-      .parent("li")
-      .addClass("active");
+    $(item).parent("li").addClass("active");
   }
 
   function getSelectedTime(jqRadioButtons) {
@@ -87,6 +96,7 @@
     createEmployeeObject,
     getAddressAndPhone,
     getAddressForGeocoding,
+    getDictionaryKey,
     getFormattedFullName,
     getSelectedTime,
     getStringWithoutLetters,
