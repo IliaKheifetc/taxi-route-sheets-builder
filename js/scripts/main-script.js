@@ -1,7 +1,6 @@
 (function taxiModule() {
   ymaps.ready(function () {
     handleInitialLoading();
-
     init();
     onDocumentReady();
   });
