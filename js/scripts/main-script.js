@@ -1,5 +1,7 @@
 (function taxiModule() {
   ymaps.ready(function () {
+    handleInitialLoading();
+
     init();
     onDocumentReady();
   });
@@ -65,6 +67,13 @@
       )
     );
   };
+  function handleInitialLoading() {
+    const loader = document.querySelector(".loader");
+    const container = document.querySelector(".page-wrapper.container");
+
+    loader.classList.add("hidden");
+    container.classList.remove("hidden");
+  }
 
   function init() {
     myMap = new ymaps.Map("map", {
@@ -297,6 +306,12 @@
       }
 
       multiRouteModel.setReferencePoints(routeReferencePoints);
+
+      console.log({ multiRouteModel });
+      console.log(
+        "multiRouteModel.getReferencePoints()",
+        multiRouteModel.getReferencePoints()
+      );
 
       setProgressWindowState();
     }.bind(this);
@@ -689,6 +704,12 @@
       }
 
       multiRouteModel.setReferencePoints([BEELINE_OFFICE_ADDRESS]);
+
+      console.log(
+        "multiRouteModel.getReferencePoints()",
+        multiRouteModel.getReferencePoints()
+      );
+
       setProgressWindowState();
     });
 

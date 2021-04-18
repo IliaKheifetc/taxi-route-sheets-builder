@@ -42,6 +42,7 @@
       type="text/css"
       href="css/bootstrap/bootstrap.min.css"
     />
+    <link rel="stylesheet" type="text/css" href="css/loader.css" />
     <link rel="stylesheet" type="text/css" href="css/libs/font-awesome.css" />
     <link rel="stylesheet" type="text/css" href="css/libs/nanoscroller.css" />
     <link
@@ -246,7 +247,25 @@
       </header>
     </div>
 
-    <div class="page-wrapper container nav-small">
+    <div class="loader">
+      <div class="track">
+        <div class="mouse"></div>
+      </div>
+      <div class="face">
+        <div class="ears-container"></div>
+        <div class="eyes-container">
+          <div class="eye"></div>
+          <div class="eye"></div>
+        </div>
+        <div class="phiz">
+          <div class="nose"></div>
+          <div class="lip"></div>
+          <div class="mouth"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-wrapper container nav-small hidden">
       <div class="row">
         <div id="nav-col">
           <section id="col-left" class="col-left-nano">
