@@ -91,6 +91,17 @@
     return str.replace(/\D/g, "");
   }
 
+  /**
+   * @param date - объект даты, который возвращает new Date(), со значением по умолчанию new Date()
+   */
+  function getFullDate(date = new Date()) {
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}/${month}/${year}`;
+  }
+
   window._taxi_utils = {
     addGeoObjectField,
     createEmployeeObject,
@@ -98,6 +109,7 @@
     getAddressForGeocoding,
     getDictionaryKey,
     getFormattedFullName,
+    getFullDate,
     getSelectedTime,
     getStringWithoutLetters,
     isSameEmployee,

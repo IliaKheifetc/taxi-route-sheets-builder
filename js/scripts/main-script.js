@@ -27,6 +27,7 @@
     getAddressForGeocoding,
     getDictionaryKey,
     getFormattedFullName,
+    getFullDate,
     getSelectedTime,
     getStringWithoutLetters,
     isSameEmployee,
@@ -785,11 +786,14 @@
           // if (window.navigator && window.navigator.msSaveOrOpenBlob) {
           //   window.navigator.msSaveOrOpenBlob(blob, "Маршрутные листы.xlsx");
           // } else {
+          const today = new Date();
+          const fileName = `Маршрутные листы ${getFullDate(today)}.xlsx`;
+
           const url = window.URL.createObjectURL(blob);
           let a = document.createElement("a");
           document.body.appendChild(a);
           a.href = url;
-          a.download = "Маршрутные листы.xlsx";
+          a.download = fileName;
           a.click();
           window.URL.revokeObjectURL(url);
           document.body.removeChild(a);
