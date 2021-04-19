@@ -497,6 +497,8 @@
           myMap.geoObjects.removeAll();
           clusterer.removeAll();
           addKalugaOfficeMarker(myMap);
+          // обнуляем мулти маршрут, так он удаляется с карты при вызове myMap.geoObjects.removeAll()
+          currentMultiRoute = null;
         }
 
         // TODO: разобраться с добавлением города или района в начало строки
