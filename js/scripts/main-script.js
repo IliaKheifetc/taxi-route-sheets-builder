@@ -67,12 +67,13 @@
       )
     );
   };
+
   function handleInitialLoading() {
     const loader = document.querySelector(".loader");
-    const container = document.querySelector(".page-wrapper.container");
+    // const container = document.querySelector(".page-wrapper.container");
 
-    loader.classList.add("hidden");
-    container.classList.remove("hidden");
+    // loader.classList.add("hidden");
+    // container.classList.remove("hidden");
   }
 
   function init() {
@@ -497,7 +498,7 @@
           myMap.geoObjects.removeAll();
           clusterer.removeAll();
           addKalugaOfficeMarker(myMap);
-          // обнуляем мулти маршрут, так он удаляется с карты при вызове myMap.geoObjects.removeAll()
+          // обнуляем мульти-маршрут, так как он удаляется с карты при вызове myMap.geoObjects.removeAll()
           currentMultiRoute = null;
         }
 
