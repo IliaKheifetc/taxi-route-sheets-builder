@@ -1,6 +1,6 @@
-const { getFormattedFullName } = window._taxi_utils;
-
-class TableBuilder {
+// const { getFormattedFullName } = window._taxi_utils;
+import { getFormattedFullName } from "./utils";
+export default class TableBuilder {
   constructor(excelSheet) {
     this.sheet = excelSheet;
     this.sheetRowCursor = 1;
