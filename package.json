@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "rollup-build-watch": "rollup -c rollup.config.js --watch"
+    "rollup-build-watch": "rollup -c rollup.config.js --watch",
+    "build": "rollup -c rollup.config.js"
   },
   "repository": {
     "type": "git",
@@ -18,6 +19,7 @@
   },
   "homepage": "https://github.com/IliaKheifetc/taxi-route-sheets-builder#readme",
   "devDependencies": {
+    "rollup-plugin-generate-html-template": "^1.7.0",
     "rollup-plugin-terser": "^7.0.2"
   }
 }

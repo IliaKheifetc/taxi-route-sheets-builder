@@ -7,7 +7,7 @@ export default class TableBuilder {
   }
 
   setColumns(columnsDescriptions) {
-    columnsDescriptions.forEach(columnDescription => {
+    columnsDescriptions.forEach((columnDescription) => {
       const { name, width } = columnDescription;
       this.sheet.column(name).width(width);
     });
@@ -38,7 +38,14 @@ export default class TableBuilder {
     return currentCell;
   }
 
-  createRouteSheetBlock({ startRowIndex, date, time, employees, index }) {
+  createRouteSheetBlock({
+    startRowIndex,
+    date,
+    time,
+    employees,
+    employeeOnDutyPhoneNumber,
+    index,
+  }) {
     this.createRow(
       startRowIndex,
       [{ value: `Маршрутный лист "БИЛАЙН" №${index}`, colSpan: 4 }],
@@ -48,7 +55,7 @@ export default class TableBuilder {
       ++startRowIndex,
       [
         { value: "Дата исполнения заказа:", colSpan: 2 },
-        { value: date, colSpan: 2 }
+        { value: date, colSpan: 2 },
       ],
       [{ bold: true }]
     );
@@ -56,15 +63,15 @@ export default class TableBuilder {
       ++startRowIndex,
       [
         { value: "Время посадки:", colSpan: 2 },
-        { value: time, colSpan: 2 }
+        { value: time, colSpan: 2 },
       ],
       [{ bold: true }]
     );
     this.createRow(
       ++startRowIndex,
       [
-        { value: "Номер машины:", colSpan: 2 },
-        { value: "", colSpan: 2 }
+        { value: "Номер телефона дежурного:", colSpan: 2 },
+        { value: employeeOnDutyPhoneNumber, colSpan: 2 },
       ],
       [{ bold: true }]
     );
@@ -72,7 +79,7 @@ export default class TableBuilder {
       ++startRowIndex,
       [
         { value: "Номер заказа:", colSpan: 2 },
-        { value: "", colSpan: 2 }
+        { value: "", colSpan: 2 },
       ],
       [{ bold: true }]
     );
@@ -82,15 +89,15 @@ export default class TableBuilder {
       [
         { bold: true, fill: "d3d3d3", horizontalAlignment: "center" },
         { bold: true, fill: "d3d3d3", horizontalAlignment: "center" },
-        { bold: true, fill: "d3d3d3", horizontalAlignment: "center" }
+        { bold: true, fill: "d3d3d3", horizontalAlignment: "center" },
       ]
     );
 
-    employees.forEach(employee => {
+    employees.forEach((employee) => {
       const rowNumber = this.createRow(++startRowIndex, [
         { value: getFormattedFullName(employee.fullName) },
         { value: `${employee.address}, ${employee.phone}` },
-        { value: employee.district, colSpan: 2 }
+        { value: employee.district, colSpan: 2 },
       ]).rowNumber();
 
       this.sheetRowCursor = rowNumber + 1;

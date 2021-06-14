@@ -3,9 +3,12 @@ const handleValidityState = ({
   formGroup,
   icon,
   touched,
-  validity
+  validity,
+  isForced = false,
 }) => {
-  if (touched && (!validity.valid || validity.valueMissing)) {
+  const modal = document.querySelector(".modal-dialog");
+
+  if ((touched || isForced) && (!validity.valid || validity.valueMissing)) {
     formGroup.classList.remove("has-success");
     formGroup.classList.add("has-error");
 
@@ -15,6 +18,10 @@ const handleValidityState = ({
     errorHelpText.innerText = validity.valueMissing
       ? "Телефон обязателен для заполнения"
       : "Введите телефон в формате +7-999-999-99-99";
+
+    modal.dispatchEvent(
+      new CustomEvent("phoneValidationResult", { detail: { isValid: false } })
+    );
   } else {
     formGroup.classList.remove("has-error");
     formGroup.classList.add("has-success");
@@ -22,10 +29,14 @@ const handleValidityState = ({
     icon.classList.add("glyphicon-ok");
     icon.classList.remove("glyphicon-remove");
     errorHelpText.innerText = "";
+
+    modal.dispatchEvent(
+      new CustomEvent("phoneValidationResult", { detail: { isValid: true } })
+    );
   }
 };
 
-export const getPhoneInputElement = globalState => {
+export const getPhoneInputFormGroupElement = (globalState) => {
   let touched = false;
   const formGroup = document.createElement("div");
   formGroup.classList.add("form-group", "has-feedback");
@@ -45,9 +56,14 @@ export const getPhoneInputElement = globalState => {
 
   input.classList.add("form-control");
 
-  input.addEventListener("input", e => {
-    console.log(e);
-    console.log("e.target.validity", e.target.validity);
+  new Cleave(input, {
+    blocks: [2, 3, 3, 2, 2],
+    prefix: "+7",
+    numericOnly: true,
+    delimiter: "-",
+  });
+
+  const handleInput = (e) => {
     globalState.employeeOnDutyPhoneNumber = e.target.value;
 
     handleValidityState({
@@ -55,11 +71,11 @@ export const getPhoneInputElement = globalState => {
       formGroup,
       icon,
       touched,
-      validity: e.target.validity
+      validity: e.target.validity,
     });
-  });
+  };
 
-  input.addEventListener("blur", e => {
+  const handleBlur = (e) => {
     touched = true;
 
     handleValidityState({
@@ -67,9 +83,28 @@ export const getPhoneInputElement = globalState => {
       formGroup,
       icon,
       touched,
-      validity: e.target.validity
+      validity: e.target.validity,
     });
-  });
+  };
+
+  const handleRunPhoneValidation = (e) => {
+    touched = true;
+
+    handleValidityState({
+      errorHelpText,
+      formGroup,
+      icon,
+      touched,
+      validity: e.target.validity,
+      isForced: true,
+    });
+  };
+
+  input.addEventListener("input", handleInput);
+
+  input.addEventListener("blur", handleBlur);
+
+  input.addEventListener("runPhoneValidation", handleRunPhoneValidation);
 
   formGroup.appendChild(input);
   formGroup.appendChild(icon);

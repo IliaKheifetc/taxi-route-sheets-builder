@@ -28,7 +28,7 @@ import { debounce } from "_";
 // } = window._taxi_utils;
 
 import TableBuilder from "./TableBuilder";
-import { getPhoneInputElement } from "./phoneInput";
+import { getPhoneInputFormGroupElement } from "./phoneInput";
 
 import {
   BEELINE_OFFICE_ADDRESS,
@@ -40,7 +40,7 @@ import {
   HEADER_ROWS_COUNT,
   KALUGA_COORDINATES,
   MAX_CAR_CAPACITY,
-  ROWS_PER_PAGE
+  ROWS_PER_PAGE,
 } from "./constants";
 
 import {
@@ -54,7 +54,7 @@ import {
   getSelectedTime,
   getStringWithoutLetters,
   isSameEmployee,
-  setItemAsActive
+  setItemAsActive,
 } from "./utils";
 
 ymaps.ready(function () {
@@ -72,10 +72,10 @@ let routeCarPassengers = [];
 let routeSheetsData = [];
 let routeSheetsDataSet = new Set();
 
-let globalState = { employeeOnDutyPhoneNumber: "" };
+let globalState = { employeeOnDutyPhoneNumber: "", hasPhoneError: false };
 
-const isPassengerOnCurrentList = target =>
-  routeCarPassengers.some(passenger => passenger.geoObject === target);
+const isPassengerOnCurrentList = (target) =>
+  routeCarPassengers.some((passenger) => passenger.geoObject === target);
 
 const getBalloonContentHeader = (index, name, checked = false) => {
   const checkboxId = `checkbox-add-to-route-sheet-${index}`;
@@ -84,16 +84,16 @@ const getBalloonContentHeader = (index, name, checked = false) => {
   }/><label for=${checkboxId}>${name}</label></div>`;
 };
 
-const addKalugaOfficeMarker = map => {
+const addKalugaOfficeMarker = (map) => {
   map.geoObjects.add(
     new ymaps.Placemark(
       BEELINE_OFFICE_COORDINATES,
       {
         balloonContent: "<strong>ЦПК Калуга</strong>",
-        hintContent: "ЦПК Калуга"
+        hintContent: "ЦПК Калуга",
       },
       {
-        iconColor: "#ff0000"
+        iconColor: "#ff0000",
       }
     )
   );
@@ -110,7 +110,7 @@ function handleInitialLoading() {
 function init() {
   myMap = new ymaps.Map("map", {
     center: KALUGA_COORDINATES,
-    zoom: 12
+    zoom: 12,
   });
 
   // Создаем собственный макет с информацией о выбранном геообъекте.
@@ -127,11 +127,11 @@ function init() {
       "{% for geoObject in properties.geoObjects %}",
       '<li><a href=# data-placemarkid="{{ geoObject.properties.placemarkId }}" class="list_item">{{ geoObject.properties.balloonContentHeader|raw }}</a></li>',
       "{% endfor %}",
-      "</ul>"
+      "</ul>",
     ].join("")
   );
 
-  $(document).on("click", ".cluster-item-add-to-route-sheet input", event => {
+  $(document).on("click", ".cluster-item-add-to-route-sheet input", (event) => {
     const index = +getStringWithoutLetters(event.target.id);
     const geoObject = myMap.geoObjects.get(index);
 
@@ -139,16 +139,17 @@ function init() {
       .get(CLUSTERER_INDEX)
       .getGeoObjects();
 
-    const passengerGeoObject = clustererGeoObjects.find(clustererGeoObject => {
-      const currentGeoObjectIndex = +getStringWithoutLetters(
-        clustererGeoObject.properties.get("id")
-      );
-      return currentGeoObjectIndex === index;
-    });
-
-    const isPassengerAlreadyAdded = isPassengerOnCurrentList(
-      passengerGeoObject
+    const passengerGeoObject = clustererGeoObjects.find(
+      (clustererGeoObject) => {
+        const currentGeoObjectIndex = +getStringWithoutLetters(
+          clustererGeoObject.properties.get("id")
+        );
+        return currentGeoObjectIndex === index;
+      }
     );
+
+    const isPassengerAlreadyAdded =
+      isPassengerOnCurrentList(passengerGeoObject);
 
     if (
       !isPassengerAlreadyAdded &&
@@ -185,7 +186,7 @@ function init() {
       clusterOpenEmptyHint: true,
       clusterHintContent: "123",
       // Устанавливаем собственный макет.
-      clusterBalloonContentLayout: customBalloonContentLayout
+      clusterBalloonContentLayout: customBalloonContentLayout,
     },
     { clusterHintContent: "123" }
   );
@@ -205,17 +206,18 @@ function init() {
     address = address.join(",");
 
     clusterPlacemark.properties.set("hintContent", address);
-    clusterPlacemark.events.add(["click"], cluster => {
+    clusterPlacemark.events.add(["click"], (cluster) => {
       const clusterGeoObjects = cluster.originalEvent.target.getGeoObjects();
 
-      clusterGeoObjects.forEach(clusterGeoObject => {
+      clusterGeoObjects.forEach((clusterGeoObject) => {
         const employee = clusterGeoObject.properties.get("employee");
         const geoObjectIndex = +getStringWithoutLetters(
           clusterGeoObject.properties.get("id")
         );
 
         const isEmployeeSelected = routeCarPassengers.some(
-          routeCarPassenger => clusterGeoObject === routeCarPassenger.geoObject
+          (routeCarPassenger) =>
+            clusterGeoObject === routeCarPassenger.geoObject
         );
 
         clusterGeoObject.properties.set(
@@ -269,9 +271,25 @@ function onMarkerClicked(employeeData, carPassengers) {
         // routeActiveStrokeColor: "ff0000",
         wayPointIconFillColor: "red",
         wayPointVisible: false,
-        boundsAutoApply: false
+        boundsAutoApply: false,
         //iconContent: "1"
       });
+      console.log({ currentMultiRoute });
+
+      // currentMultiRoute.model.events.add('update', function () {
+      //   // Получение ссылки на активный маршрут.
+      //   var activeRoute = currentMultiRoute.getActiveRoute();
+      //   // Вывод информации о маршруте.
+      //   console.log('Длина: ' + activeRoute.properties.get('distance').text);
+      //   console.log(
+      //     'Время прохождения: ' + activeRoute.properties.get('duration').text
+      //   );
+      //   // Для автомобильных маршрутов можно вывести
+      //   // информацию о перекрытых участках.
+      //   if (activeRoute.properties.get('blocked')) {
+      //     console.log('На маршруте имеются участки с перекрытыми дорогами.');
+      //   }
+      // });
 
       myMap.geoObjects.add(currentMultiRoute);
       target.options.set("preset", "islands#darkGreenIcon");
@@ -299,7 +317,7 @@ function onMarkerClicked(employeeData, carPassengers) {
       // // удаляем точку из маршрута
       // Ищем в массиве точек индекс той точки, на которую сейчас кликнули
       const routeReferencePointIndex = routeReferencePoints.findIndex(
-        referencePoint => {
+        (referencePoint) => {
           if (!Array.isArray(referencePoint)) {
             return false;
           }
@@ -316,7 +334,7 @@ function onMarkerClicked(employeeData, carPassengers) {
       target.options.set("preset", "islands#blueIcon");
 
       // удаление из массива пассажиров
-      const passengerIndex = carPassengers.findIndex(employee =>
+      const passengerIndex = carPassengers.findIndex((employee) =>
         isSameEmployee(employee, employeeData)
       );
       carPassengers.splice(passengerIndex, 1);
@@ -332,6 +350,7 @@ function onMarkerClicked(employeeData, carPassengers) {
     }
 
     multiRouteModel.setReferencePoints(routeReferencePoints);
+    console.log({ currentMultiRoute });
 
     setProgressWindowState();
   }.bind(this);
@@ -340,7 +359,7 @@ function onMarkerClicked(employeeData, carPassengers) {
 function setProgressWindowState() {
   const routeReferencePoints = multiRouteModel.getReferencePoints();
   this.progressWindow.css({
-    display: routeReferencePoints.length > 1 ? "block" : "none"
+    display: routeReferencePoints.length > 1 ? "block" : "none",
   });
   const percentageValue = (routeReferencePoints.length - 1) * 25;
   this.chart.data("easyPieChart").update(percentageValue);
@@ -361,22 +380,37 @@ function initPieChart(chartNode) {
     scaleColor: false,
     lineWidth: 8,
     size: 130,
-    animate: 500
+    animate: 500,
   });
 }
 
 function hideMessageModal() {
   const messageBody = this.find(".modal-body");
+  const messageFooter = this.find(".modal-footer");
   messageBody.empty();
+
+  console.log("hideMessageModal before display: 'none'");
   this.css({ display: "none" });
+  messageFooter.empty();
 }
 
-function showMessageModal({ title, bodyText = "", bodyContent, onClose }) {
+function showMessageModal({
+  title,
+  bodyText = "",
+  bodyContent,
+  onClose,
+  footerButtons = [{ text: "Закрыть" }],
+}) {
+  console.log("showMessageModal");
+
   this.removeClass("fade");
+  console.log("showMessageModal before display: 'block'");
   this.css({ display: "block" });
+  const message = this.find(".modal-dialog");
   const messageTitle = this.find(".modal-title");
   const messageBody = this.find(".modal-body");
   const messageHeader = this.find(".modal-header");
+  const messageFooter = this.find(".modal-footer");
   const messageFooterCloseBtn = this.find(".modal-footer button");
   const messageHeaderCloseBtn = this.find(".modal-header button");
 
@@ -393,9 +427,33 @@ function showMessageModal({ title, bodyText = "", bodyContent, onClose }) {
   }
 
   messageHeaderCloseBtn.on("click", hideMessageModal);
-  messageFooterCloseBtn.on("click", () => {
-    typeof onClose === "function" && onClose();
-    hideMessageModal();
+
+  messageFooter.empty();
+
+  footerButtons.forEach((button, index) => {
+    const buttonElement = $(document.createElement("button"));
+    buttonElement.attr("type", "button");
+    buttonElement.attr(
+      "class",
+      button.classNames
+        ? "btn btn-default"
+        : `btn btn-default ${button.classNames}`
+    );
+    buttonElement.text(button.text);
+
+    buttonElement.on("click", async () => {
+      try {
+        const canClose = await (typeof button.onClick === "function"
+          ? button.onClick()
+          : Promise.resolve(true));
+
+        canClose && hideMessageModal();
+      } catch (e) {
+        console.log("error", e);
+      }
+    });
+
+    messageFooter.append(buttonElement);
   });
 }
 
@@ -411,7 +469,7 @@ function onDocumentReady() {
   const progressWindow = $(".car-fill-progress-window");
   const chart = $(".chart");
   const addToRouteSheetBtn = $("#add");
-  const downloadExcelFileBtn = $("#download");
+  const exportExcelFileMenuItem = $("#download");
   const messageModal = $("#modal-message");
 
   const getKalugaAddressForGeocoding = getAddressForGeocoding.bind(
@@ -422,10 +480,10 @@ function onDocumentReady() {
 
   setProgressWindowState = setProgressWindowState.bind({
     chart,
-    progressWindow
+    progressWindow,
   });
   onMarkerClicked = onMarkerClicked.bind({
-    timeSelectorModal
+    timeSelectorModal,
   });
   showMessageModal = showMessageModal.bind(messageModal);
   hideMessageModal = hideMessageModal.bind(messageModal);
@@ -539,13 +597,13 @@ function onDocumentReady() {
       if (!jqRows.length) {
         showMessageModal({
           bodyText:
-            "Таблица с информацией по сотрудниками не скопирована или таблица некорректного формата"
+            "Таблица с информацией по сотрудниками не скопирована или таблица некорректного формата",
         });
         return;
       }
 
       // фильтруем строки по времени
-      const rowsByTime = Array.from(jqRows).filter(row => {
+      const rowsByTime = Array.from(jqRows).filter((row) => {
         const time = row.children[0].innerText.padStart(5, "0");
 
         return time === selectedTime;
@@ -553,22 +611,22 @@ function onDocumentReady() {
 
       if (!rowsByTime.length) {
         showMessageModal({
-          bodyText: "Нет сотрудников, записанных на выбранное время"
+          bodyText: "Нет сотрудников, записанных на выбранное время",
         });
         return;
       }
 
       // все сотрудники для выбранного времени
       const employees = rowsByTime
-        .map(row =>
+        .map((row) =>
           Array.from(row.querySelectorAll("td")).map(
-            element => element.innerText
+            (element) => element.innerText
           )
         )
         .map(createEmployeeObject);
 
       // сотрудники для выбранного времени, еще не внесенные в маршрутные листы
-      const notAddedEmployees = employees.filter(employee => {
+      const notAddedEmployees = employees.filter((employee) => {
         const key = getDictionaryKey(employee);
 
         return !routeSheetsDataSet.has(key);
@@ -576,7 +634,7 @@ function onDocumentReady() {
 
       if (!notAddedEmployees.length) {
         showMessageModal({
-          bodyText: "На выбранное время уже сформированы маршрутные листы"
+          bodyText: "На выбранное время уже сформированы маршрутные листы",
         });
         return;
       }
@@ -586,7 +644,7 @@ function onDocumentReady() {
       notAddedEmployees.forEach((employee, index) => {
         ymaps
           .geocode(addresses[index])
-          .then(result => {
+          .then((result) => {
             const geoObject = result.geoObjects.get(0);
             geoObject.options.set("hasBalloon", false);
             geoObject.options.set("hasHint", true);
@@ -620,7 +678,9 @@ function onDocumentReady() {
             // geoObject.options.set("iconColor", "black");
             // geoObject.options.set("iconOffset", [100, 100]);
           })
-          .catch(e => console.error(e));
+          .catch((e) =>
+            console.error("При выполнении геокодирования возникла ошибка:", e)
+          );
       });
 
       return;
@@ -699,7 +759,7 @@ function onDocumentReady() {
       .get(CLUSTERER_INDEX)
       .getGeoObjects();
 
-    clustererGeoObjects.forEach(geoObject => {
+    clustererGeoObjects.forEach((geoObject) => {
       geoObject.options.set("preset", "islands#blueIcon");
     });
 
@@ -713,7 +773,7 @@ function onDocumentReady() {
 
     routeSheetsData.push([...routeCarPassengers]);
 
-    routeCarPassengers.forEach(passenger => {
+    routeCarPassengers.forEach((passenger) => {
       const key = getDictionaryKey(passenger);
 
       routeSheetsDataSet.add(key);
@@ -733,39 +793,39 @@ function onDocumentReady() {
     setProgressWindowState();
   });
 
-  downloadExcelFileBtn.on("click", () => {
-    const phoneInput = getPhoneInputElement(globalState);
-
-    showMessageModal({ title: "Телефон дежурного", bodyContent: phoneInput });
-    return;
+  const exportExcelFile = () => {
+    console.log({ exportExcelFile });
 
     if (!routeSheetsData.length) {
+      console.log("!routeSheetsData.length");
+
       showMessageModal({
         title: "Ошибка при выгрузке",
         bodyText:
-          "Нельзя выгрузить пустые маршрутные листы. Необходимо выбрать адреса поездок."
+          "Нельзя выгрузить пустые маршрутные листы. Необходимо выбрать адреса поездок.",
       });
       return;
     }
 
-    return;
+    console.log({ globalState });
+
     // Load a new blank workbook
     XlsxPopulate.fromBlankAsync()
-      .then(workbook => {
+      .then((workbook) => {
         const tableBuilder = new TableBuilder(workbook.sheet("Sheet1"));
         tableBuilder.setColumns([
           {
             name: "A",
-            width: 18
+            width: 18,
           },
           {
             name: "B",
-            width: 44.14
+            width: 44.14,
           },
           {
             name: "C",
-            width: 15.42
-          }
+            width: 15.42,
+          },
         ]);
 
         let pageRowsLeft = ROWS_PER_PAGE;
@@ -797,7 +857,8 @@ function onDocumentReady() {
             date: new Date().toLocaleDateString(),
             time: routeSheetEmployees[0].rideTime,
             employees: routeSheetEmployees,
-            index: i + 1
+            index: i + 1,
+            employeeOnDutyPhoneNumber: globalState.employeeOnDutyPhoneNumber,
           });
 
           isPageFirstBlock = false;
@@ -827,6 +888,60 @@ function onDocumentReady() {
         alert(err.message || err);
         throw err;
       });
+  };
+
+  exportExcelFileMenuItem.on("click", () => {
+    const formGroupElement = getPhoneInputFormGroupElement(globalState);
+
+    const handleExportExcelFile = () => {
+      console.log("handleExportExcelFile");
+      console.log(
+        "formGroupElement.querySelector('input')",
+        formGroupElement.querySelector("input")
+      );
+      // $(formGroupElement).find("input").trigger("runPhoneValidation");
+
+      return new Promise((resolve, reject) => {
+        const modal = document.querySelector(".modal-dialog");
+
+        const phoneValidationResultEventHandler = (event) => {
+          console.log("message.on phoneValidationResult", event);
+
+          if (event.detail.isValid) {
+            resolve(true);
+          } else {
+            reject();
+          }
+
+          modal.removeEventListener(
+            "phoneValidationResult",
+            phoneValidationResultEventHandler
+          );
+        };
+
+        modal.addEventListener(
+          "phoneValidationResult",
+          phoneValidationResultEventHandler
+        );
+
+        formGroupElement
+          .querySelector("input")
+          .dispatchEvent(new CustomEvent("runPhoneValidation"));
+      }).then(exportExcelFile);
+    };
+
+    showMessageModal({
+      title: "Телефон дежурного",
+      bodyContent: formGroupElement,
+      footerButtons: [
+        { text: "Отмена" },
+        {
+          text: "Выгрузить",
+          classNames: "btn-excel-export",
+          onClick: handleExportExcelFile,
+        },
+      ],
+    });
   });
 
   // создание нумерации
