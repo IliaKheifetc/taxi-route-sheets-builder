@@ -10,6 +10,11 @@
     <!--
     Скрипты
     -->
+    <script>
+      if (window.location.pathname.toLowerCase().includes("beelinetaxi")) {
+        window.location.pathname = "/";
+      }
+    </script>
 
     <script src="js/jquery.js"></script>
     <script src="js/lodash.custom.min.js"></script>
@@ -458,7 +463,13 @@
           <div
             id="add-box"
             style="box-shadow: 3px 3px 3px black(10, 10, 10)"
-            class="main-box infographic-box colored gray-bg car-fill-progress-window"
+            class="
+              main-box
+              infographic-box
+              colored
+              gray-bg
+              car-fill-progress-window
+            "
           >
             <div class="project-box">
               <div class="project-box-content">
